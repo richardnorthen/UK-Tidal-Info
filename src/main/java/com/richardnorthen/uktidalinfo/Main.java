@@ -13,10 +13,10 @@ import java.util.List;
 public class Main {
     public static final String LIST_CMD = "list";
     public static final String SEARCH_OPT = "search";
-    public static final String GET_CMD = "get";
+    public static final String GET_CMD = "station";
 
     public static final String USAGE = String.format("Usage:"
-                    + "\n  program %s [%s <id|name|area>]"
+                    + "\n  program %s [%s <id | name | area>]"
                     + "\n  program %s <id>",
             LIST_CMD, SEARCH_OPT, GET_CMD);
 
@@ -43,17 +43,24 @@ public class Main {
     }
 
     public static void listStations(String filter) {
+        Stations stations;
         try {
-            Stations stations = TideGauge.listStations();
-            for (Stations.Item i : stations.items) {
-                if (filter == null || i.matchesFilter(filter)) {
-                    System.out.println(i.getFullName());
+            stations = TideGauge.listStations();
+            // apply filter is needed (tighter looping is better than a single foreach loop)
+            if (filter == null) {
+                for (Stations.Item i : stations.items) {
+                    System.out.print(i.getFullName());
+                }
+            } else {
+                for (Stations.Item i : stations.items) {
+                    if (i.matchesFilter(filter)) {
+                        System.out.println(i.getFullName());
+                    }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     public static void getStation(String id) {
