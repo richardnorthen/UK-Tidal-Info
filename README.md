@@ -1,6 +1,7 @@
 # UK Tidal Info
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > Collects and displays tidal information from around the UK.
 
@@ -27,3 +28,5 @@ Usage:
 Not sure why you'd want to contribute to such a trivial program, but sure, I'll accept PRs that look reasonable.
 
 ## License
+
+Uses the [MIT License © 2017 Richard Northen](LICENSE)
