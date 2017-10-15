@@ -1,7 +1,8 @@
 package com.richardnorthen.uktidalinfo;
 
 import com.richardnorthen.uktidalinfo.api.TideGauge;
-import com.richardnorthen.uktidalinfo.json.*;
+import com.richardnorthen.uktidalinfo.json.Station;
+import com.richardnorthen.uktidalinfo.json.Stations;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -9,47 +10,112 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-// TODO add new commands, search by latlon/postcode, dynamic display
+// TODO add new commands and options, fix usage string!!
 public class Main {
-    public static final String LIST_CMD = "list";
-    public static final String SEARCH_OPT = "search";
-    public static final String GET_CMD = "station";
+    private static final String HELP_OPT = "--help";
+    private static final String LIST_CMD = "list";
+    private static final String SEARCH_OPT = "--search";
+    private static final String GET_CMD = "get";
+    private static final String GRAPH_SIZE_OPT = "--graph-size";
+    private static final String[] GRAPH_SIZES = {"small", "medium", "large"};
+    private static final String DEFAULT_GRAPH_SIZE = GRAPH_SIZES[1];
 
-    public static final String USAGE = String.format("Usage:"
-                    + "\n  program %s [%s <id | name | area>]"
-                    + "\n  program %s <id>",
-            LIST_CMD, SEARCH_OPT, GET_CMD);
+    private static final String HOURS_OPT = "--hours";
+    private static final int DEFAULT_HOURS = 15;
+
+    private static final String USAGE_MESSAGE = String.format("\nUsage:"
+                    + "\n  Main %s"
+                    + "\n  Main %s [%s <id|name|area>]"
+                    + "\n  Main %s <id> [options]"
+                    + "\n\nOptions:"
+                    + "\n  %s=<size> set the size to be small, medium, or large"
+                    + "\n                      [default: medium]"
+                    + "\n  %s=<hours>     get data from the past 1-24 hours"
+                    + "\n                      [default: 15]"
+                    + "\n\nExamples"
+                    + "\n  Main list --search=\"port\""
+                    + "\n  Main get E70124"
+                    + "\n  Main get E70124 --graph-size=large --hours=24",
+            HELP_OPT, LIST_CMD, SEARCH_OPT, GET_CMD, GRAPH_SIZE_OPT, HOURS_OPT);
+
+    private static final String UNRECOGNIZED_ARG_ERROR = "Unrecognized argument '%s'!\n" + USAGE_MESSAGE;
+    private static final String INVALID_COMMAND_ERROR = "Invalid command!\n" + USAGE_MESSAGE;
+    private static final String HOUR_NAN_ERROR = "'%s' is not a number! Using default value: " + DEFAULT_HOURS + ".\n";
+
+    private static final String GRAPH_SIZE_INVALID = "'%s' is not a valid graph size. Using default value " + DEFAULT_GRAPH_SIZE + ".\n";
+    private static final String HOURS_INVALID = "%d is not within the specified range (1-24). Using default value " + DEFAULT_HOURS + ".\n";
 
     public static void main(String[] args) {
         List<String> cmds = Arrays.asList(args);
-
-//      System.out.print("program");
-//      for (String c : cmds) System.out.print(" " + c);
-//      System.out.println();
-
-        if (cmds.indexOf(LIST_CMD) == 0) {
+        if (cmds.indexOf(HELP_OPT) == 0) {
+            System.out.printf(USAGE_MESSAGE);
+        } else if (cmds.indexOf(LIST_CMD) == 0) {
+            // set default values
             String filter = null;
-            if (cmds.indexOf(SEARCH_OPT) == 1) {
-                if (cmds.size() > 2) {
-                    filter = cmds.get(2).toLowerCase();
+            // check options
+            for (int i = 1; i < cmds.size(); i++) {
+                // splits --option or --option="some value" into 1 or 2 strings
+                String[] option = cmds.get(i).split("=",2);
+                if (option.length == 1) {
+                    // TODO add boolean options
+                    System.out.printf(UNRECOGNIZED_ARG_ERROR, option[0]);
+                    System.exit(1);
+                } else {
+                    switch (option[0]) {
+                        case SEARCH_OPT:
+                            filter = option[1].replace("\"", "");
+                            break;
+                        default:
+                            System.out.printf(UNRECOGNIZED_ARG_ERROR, option[0]);
+                            System.exit(1);
+                    }
                 }
             }
             listStations(filter);
-        } else if (cmds.indexOf(GET_CMD) == 0 && cmds.size() > 1) {
-            getStation(cmds.get(1));
+        } else if (cmds.indexOf(GET_CMD) == 0) {
+            String id = cmds.get(1);
+            String graphSize = DEFAULT_GRAPH_SIZE;
+            int hours = DEFAULT_HOURS;
+            for (int i = 2; i < cmds.size(); i++) {
+                String[] option = cmds.get(i).split("=",2);
+                if (option.length == 1) {
+                    // TODO add boolean options
+                    System.out.printf(UNRECOGNIZED_ARG_ERROR, option[0]);
+                    System.exit(1);
+                } else {
+                    switch (option[0]) {
+                        case GRAPH_SIZE_OPT:
+                            graphSize = option[1];
+                            break;
+                        case HOURS_OPT:
+                            try {
+                                hours = Integer.parseInt(option[1]);
+                            } catch (NumberFormatException e) {
+                                System.out.printf(HOUR_NAN_ERROR, option[1]);
+                            }
+                            break;
+                        default:
+                            System.out.printf(UNRECOGNIZED_ARG_ERROR, option[0]);
+                            System.exit(1);
+                    }
+                }
+            }
+            getStation(id, graphSize, hours);
         } else {
-            System.out.println(USAGE);
+            System.out.printf(INVALID_COMMAND_ERROR);
+            System.exit(1);
         }
     }
 
-    public static void listStations(String filter) {
+    private static void listStations(String filter) {
         Stations stations;
         try {
             stations = TideGauge.listStations();
-            // apply filter is needed (tighter looping is better than a single foreach loop)
+            System.out.printf("%-20s[%-15s (Town, Region)\n", "Station Name", "Station ID]");
+            // apply filter only if needed (tighter looping)
             if (filter == null) {
                 for (Stations.Item i : stations.items) {
-                    System.out.print(i.getFullName());
+                    System.out.println(i.getFullName());
                 }
             } else {
                 for (Stations.Item i : stations.items) {
@@ -63,42 +129,120 @@ public class Main {
         }
     }
 
-    public static void getStation(String id) {
+    private static void getStation(String id, String graphSize, int hours) {
         try {
-            Station station = TideGauge.getStation(id);
-            DateFormat dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-            DateFormat dateDisplay = new SimpleDateFormat("MMM dd yyyy");
-            Date startingDay = dateParser.parse(station.items[station.items.length-1].dateTime);
-            // build the virtual screen
-            String lines[] = {String.format("Station: %-31s%40s", id, dateDisplay.format(startingDay)), "",
-                    " 10 ", "  8 ", "  6 ", "  4 ", "  2 ", "m 0 ", " -2 ", " -4 ", " -6 ", " -8 ", "-10 ",
-                    "    "};
-            dateDisplay = new SimpleDateFormat("HHmm");
-            // setup time labels
-            for (int i = station.items.length-1; i > 0; i = i-4) {
-                Date time = dateParser.parse(station.items[i].dateTime);
-                String timeLabel = dateDisplay.format(time);
-                if ((i-3) % 8 == 0) {
-                    lines[1] += "    " + timeLabel;
-                } else {
-                    lines[13] += "    " + timeLabel;
+            // validate inputs
+            if (!Arrays.asList(GRAPH_SIZES).contains(graphSize)) {
+                System.out.printf(GRAPH_SIZE_INVALID, graphSize);
+                graphSize = DEFAULT_GRAPH_SIZE;
+            }
+            if (hours > 24 || hours < 1) {
+                System.out.printf(HOURS_INVALID, hours);
+                hours = DEFAULT_HOURS;
+            }
+            // get station data
+            int readings = hours * 4;
+            Station station = TideGauge.getStation(id, readings);
+            // setup graph title
+            DateFormat readingDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            DateFormat headerDate = new SimpleDateFormat("MMM dd yyyy");
+            Date startingDate = readingDate.parse(station.items[station.items.length-1].dateTime);
+            String title = String.format("Station: %s | Starting date: %s\n", id, headerDate.format(startingDate));
+            // setup header and footer of graph
+            DateFormat timestamp = new SimpleDateFormat("HHmm");
+            String header = "";
+            String footer = "";
+            // iterate over all readings
+            double maxValue = Double.MIN_VALUE, minValue = Double.MAX_VALUE;
+            for (int i = 0; i < station.items.length; i++) {
+                // calculate max and min tides
+                double value = station.items[i].value;
+                if (value > maxValue) {
+                    maxValue = value;
+                } else if (value < minValue) {
+                    minValue = value;
+                }
+                // collect timestamps every hour
+                Date time = readingDate.parse(station.items[i].dateTime);
+                if ((i % 8) == 0) {
+                    header = "    " + timestamp.format(time) + header;
+                } else if ((i % 8) == 4) {
+                    footer = "    " + timestamp.format(time) + footer;
                 }
             }
-            // draw graph
-            for (Station.Item i : station.items) {
-                int v = (int) Math.round(i.value) / 2;
-                for (int j = -5; j < 6; j++) {
-                    if (v == j) {
-                        lines[j+7] += "~";
-                    } else {
-                        lines[j+7] += " ";
+            // decide on the graph labels: max, min, steps
+            int max = (int) Math.ceil(maxValue);
+            int min = (int) Math.floor(minValue);
+            int steps; // includes 0
+            if (graphSize.equals(GRAPH_SIZES[0])) {
+                if ((max % 2) != 0) {
+                    max++;
+                }
+                if ((min % 2) != 0) {
+                    min--;
+                }
+                steps = ((max - min) / 2) + 1;
+            } else if (graphSize.equals(GRAPH_SIZES[2])) {
+                steps = ((max - min) * 2) + 1;
+            } else { // "medium"
+                steps = (max - min) + 1;
+            }
+            // build the graph (note: it's upside-down)
+            String[] graph = new String[steps];
+            for (int i = 0; i < graph.length; i++) {
+                if (graphSize.equals(GRAPH_SIZES[0])) {
+                    graph[i] = String.format("%+3.1f", (double) min + (i * 2));
+                } else if (graphSize.equals(GRAPH_SIZES[2])) {
+                    graph[i] = String.format("%+3.1f", (double) min + ((double) i / 2));
+                } else { // "medium"
+                    graph[i] = String.format("%+3.1f", (double) min + i);
+                }
+            }
+            // populate the graph with data
+            for (int i = station.items.length-1; i > -1; i--) {
+                double value = station.items[i].value;
+                if (graphSize.equals(GRAPH_SIZES[0])) {
+                    value = Math.round(value / 2) - (min/2);
+                    for (int j = 0; j < graph.length; j++) {
+                        if (value == j) {
+                            graph[j] += "~";
+                        } else {
+                            graph[j] += " ";
+                        }
+                    }
+                } else if (graphSize.equals(GRAPH_SIZES[2])) {
+                    value = Math.round(value * 2) - (min*2);
+                    for (int j = 0; j < graph.length; j++) {
+                        if (value == j) {
+                            graph[j] += "~";
+                        } else {
+                            graph[j] += " ";
+                        }
+                    }
+                } else { // "medium"
+                    value = Math.round(value) - min;
+                    for (int j = 0; j < graph.length; j++) {
+                        if (value == j) {
+                            graph[j] += "~";
+                        } else {
+                            graph[j] += " ";
+                        }
                     }
                 }
             }
-            // print display
-            for (String line : lines) {
-                System.out.println(line);
+            // print the graph
+            System.out.printf(title);
+            // adjust spacing depending on start time
+            if ((hours % 2) == 0) {
+                header = "    " + header;
+            } else {
+                footer = "    " + footer;
             }
+            System.out.println(header);
+            for (int i = graph.length-1; i > -1; i--) {
+                System.out.println(graph[i]);
+            }
+            System.out.println(footer);
         } catch (Exception e) {
             e.printStackTrace();
         }

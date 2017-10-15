@@ -14,9 +14,23 @@ A command-line interface program written in Java that collects and displays tida
 ## Usage
 
 ```
+$ java Main --help
+  
 Usage:
-  program list [search <id | name | area>]
-  program station <id>
+  Main --help
+  Main list [--search=<id|name|area>]
+  Main get <station-id> [option]
+  
+Options:
+  --graph-size=<size> set the size to be small, medium, or large
+                      [default: medium]
+  --hours=<hours>     get data from the past 1-24 hours
+                      [default: 15]
+  
+Examples:
+  Main list --search="port"
+  Main get E70124
+  Main get E70124 --graph-size=large --hours=24
 ```
 
 ## Maintainer

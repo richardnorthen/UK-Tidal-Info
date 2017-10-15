@@ -12,8 +12,9 @@ public class Stations {
         public Item() {}
 
         public String getFullName() {
-            // stations will always have a label and notation
+            // a station is guaranteed to have a label and notation
             String name = String.format("%-20s[%-15s", label, notation + "]");
+            // append optional town / catchment information
             if (town != null) {
                 name += " (" + town;
                 if (catchmentName != null) {

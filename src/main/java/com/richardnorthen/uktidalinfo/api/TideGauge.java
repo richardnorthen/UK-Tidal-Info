@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 // TODO improve Exception handling, custom date ranges, specified unit types, etc.
 public class TideGauge {
     private static final String LIST_STATIONS_URL = "https://environment.data.gov.uk/flood-monitoring/id/stations?type=TideGauge";
-    private static final String GET_STATION_URL = "https://environment.data.gov.uk/flood-monitoring/id/stations/%s/readings?_sorted&_limit=76";
+    private static final String GET_STATION_URL = "https://environment.data.gov.uk/flood-monitoring/id/stations/%s/readings?_sorted&_limit=%d";
 
     private static final int DEFAULT_TIMEOUT = 5000;
 
@@ -60,13 +60,13 @@ public class TideGauge {
      * @throws Exception with a specific error message
      * @see Station
      */
-    public static Station getStation(String stationId) throws Exception {
+    public static Station getStation(String stationId, int readings) throws Exception {
         // check station ID format
         if (!Pattern.compile(STATION_ID_FORMAT).matcher(stationId).matches()) {
             throw new Exception(INVALID_STATION_ID_ERROR);
         }
         // build custom url for query
-        String response = queryAPI(String.format(GET_STATION_URL, stationId));
+        String response = queryAPI(String.format(GET_STATION_URL, stationId, readings));
         if (response == null) {
             throw new Exception(NO_RESPONSE_ERROR);
         }
