@@ -12,10 +12,13 @@ public class Stations {
         public Item() {}
 
         public String getFullName() {
+            // a station is guaranteed to have a label and notation
             String name = String.format("%-20s[%-15s", label, notation + "]");
+            // append optional town / catchment information
             if (town != null) {
                 name += " (" + town;
                 if (catchmentName != null) {
+                    // remove 'England - '
                     name += ", " + catchmentName.substring(10, catchmentName.length());
                 }
                 name += ")";
@@ -27,13 +30,11 @@ public class Stations {
 
         public boolean matchesFilter(String filter) {
             boolean result = false;
-            if (catchmentName != null && catchmentName.toLowerCase().contains(filter)) {
-                result = true;
-            } else if (label != null && label.toLowerCase().contains(filter)) {
-                result = true;
-            } else if (notation != null && notation.toLowerCase().contains(filter)) {
-                result = true;
-            } else if (town != null && town.toLowerCase().contains(filter)) {
+            // check every field for a match
+            if ((catchmentName != null && catchmentName.toLowerCase().contains(filter))
+                || (label != null && label.toLowerCase().contains(filter))
+                || (notation != null && notation.toLowerCase().contains(filter))
+                || (town != null && town.toLowerCase().contains(filter))) {
                 result = true;
             }
             return result;
