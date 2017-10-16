@@ -12,7 +12,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.regex.Pattern;
 
-// TODO improve Exception handling, custom date ranges, specified unit types, etc.
+// TODO improve Exception handling, custom date ranges, specific unit types, etc.
 public class TideGauge {
     private static final String LIST_STATIONS_URL = "https://environment.data.gov.uk/flood-monitoring/id/stations?type=TideGauge";
     private static final String GET_STATION_URL = "https://environment.data.gov.uk/flood-monitoring/id/stations/%s/readings?_sorted&_limit=%d";
